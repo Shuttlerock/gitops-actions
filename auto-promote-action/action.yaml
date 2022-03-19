@@ -1,0 +1,35 @@
+name: 'Auto Promotion'
+description: 'Apply environment promotion rules from config'
+inputs:
+  user:
+    description: 'User to use for accessing repositories'
+    required: true
+  email:
+    description: 'Email to use in signature'
+    required: true
+  password:
+    description: 'Password or access token for authenticating with repository'
+    required: false
+  config:
+    description: 'Path to config file'
+    required: true
+  semver:
+    description: 'Semantic version for reference in config'
+    required: false
+  commit:
+    description: 'Commit SHA for reference in config'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '--git-user'
+    - ${{ inputs.user }}
+    - '--git-email'
+    - ${{ inputs.email }}
+    - ${{ inputs.password && '--git-password' }}
+    - ${{ inputs.password }}
+    - '--config'
+    - ${{ inputs.config }}
+    - '-v semver=${{ inputs.semver }}'
+    - '-v commit=${{ inputs.commit }}'
