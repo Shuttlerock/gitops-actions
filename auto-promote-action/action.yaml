@@ -23,6 +23,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
+    - 'auto-promote'
     - '--git-user'
     - ${{ inputs.user }}
     - '--git-email'
