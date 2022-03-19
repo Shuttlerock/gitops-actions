@@ -28,7 +28,7 @@ runs:
     - ${{ inputs.user }}
     - '--git-email'
     - ${{ inputs.email }}
-    - ${{ inputs.password && '--git-password' }}
+    - '--git-password'
     - ${{ inputs.password }}
     - '--config'
     - ${{ inputs.config }}
