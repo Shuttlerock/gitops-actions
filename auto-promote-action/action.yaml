@@ -31,6 +31,6 @@ runs:
     - '--git-password'
     - ${{ inputs.password }}
     - '--config'
-    - {{ inputs.config }}
+    - ${{ inputs.config }}
     - '-v semver=${{ inputs.semver }}'
     - '-v commit=${{ inputs.commit }}'
