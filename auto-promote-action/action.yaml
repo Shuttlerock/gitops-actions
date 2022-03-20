@@ -31,6 +31,6 @@ runs:
     - '--git-password'
     - ${{ inputs.password }}
     - '--config'
-    - '/github/workspace/${{ inputs.config }}'
+    - '${{ github.workspace }}/${{ inputs.config }}'
     - '-v semver=${{ inputs.semver }}'
     - '-v commit=${{ inputs.commit }}'
