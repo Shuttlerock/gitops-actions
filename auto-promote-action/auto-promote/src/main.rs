@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::error::Error;
 use uuid::Uuid;
 
@@ -9,6 +9,7 @@ mod git;
 mod hcl;
 
 use config::Pattern;
+use glob::glob;
 
 /// Parse a single key-value pair
 fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
@@ -44,13 +45,26 @@ struct Args {
     values: Vec<(String, String)>,
 }
 
+// Get all file paths matching the unix glob pattern.
+fn glob_files(pattern: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let paths = glob(pattern)?
+        .filter(|path| match path {
+            Err(_) => true,
+            Ok(path) => if path.is_file() { true } else { false },
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(paths)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let cfg = config::from_path(&args.config)?;
 
-    let repository_path = Path::new("/tmp/repository");
+    let repository_str = "/tmp/repository";
+    let repository_path = Path::new(&repository_str);
 
     // Process all enabled targets.
     let targets = cfg.targets
@@ -64,6 +78,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         // Apply all rules.
         for rule in target.rules.iter() {
+            let absolute_paths = glob_files(&format!("{}/{}", repository_str, rule.file_pattern))?;
+
+            // Strip repository path to get just relative paths.
+            let relative_paths = absolute_paths
+                .iter()
+                .map(|path| path.strip_prefix(repository_path))
+                .collect::<Result<Vec<_>, _>>()?;
+
             // Find the first correct value for variable in the inputs.
             let value = args.values
                 .iter()
@@ -73,12 +95,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             match &rule.pattern {
                 Pattern::Hcl { block, labels, attribute } => {
-                   hcl::update_file(&repository_path.join(&rule.file_name), &block, &labels, &attribute, &value)?;
+                    for path in &absolute_paths {
+                        hcl::update_file(&path, &block, &labels, &attribute, &value)?;
+                    }
                 },
             }
 
             // Add and commit updated file.
-            ctx.add_and_commit(Path::new(&rule.file_name), &format!("Bump {} to {}.", rule.variable, value))?;
+            ctx.add_and_commit(&relative_paths, &format!("Bump {} to {}.", rule.variable, value))?;
         }
 
         // Generate a unique branch name.

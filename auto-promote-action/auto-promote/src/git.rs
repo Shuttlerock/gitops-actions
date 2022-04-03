@@ -26,9 +26,13 @@ impl Context {
         obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit"))
     }
 
-    pub fn add_and_commit(&self, path: &Path, message: &str) -> Result<(), git2::Error> {
+    pub fn add_and_commit(&self, paths: &[&Path], message: &str) -> Result<(), git2::Error> {
         let mut index = self.repository.index()?;
-        index.add_path(path)?;
+
+        for path in paths {
+            index.add_path(path)?;
+        }
+
         let oid = index.write_tree()?;
         let signature = Signature::now(&self.user, &self.email)?;
         let parent_commit = self.find_last_commit()?;

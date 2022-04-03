@@ -11,7 +11,7 @@ pub enum Pattern {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
-    pub file_name: String,
+    pub file_pattern: String,
     pub variable: String,
     pub pattern: Pattern,
 }
