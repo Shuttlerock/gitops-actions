@@ -7,7 +7,8 @@ import (
 	"os"
 )
 
-func OpenFile(filename string) (*hclwrite.File, error) {
+// ReadFile attempts to read and parse an HCL file into an AST for further processing.
+func ReadFile(filename string) (*hclwrite.File, error) {
 	bytes, err := os.ReadFile(filename)
 
 	if err != nil {
@@ -23,6 +24,7 @@ func OpenFile(filename string) (*hclwrite.File, error) {
 	return file, err
 }
 
-func SaveFile(file *hclwrite.File, filename string) error {
+// WriteFile writes changes in the AST back to the filesystem.
+func WriteFile(file *hclwrite.File, filename string) error {
 	return os.WriteFile(filename, file.Bytes(), 0666)
 }

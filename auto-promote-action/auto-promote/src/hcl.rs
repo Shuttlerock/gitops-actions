@@ -29,7 +29,10 @@ pub fn update_file<T: AsRef<str>>(
         command.arg(format!("{}={}", name, value));
     }
 
-    let output = command.output()
+    println!("Updating HCL file: {}", file_name.display());
+
+    let output = command
+        .output()
         .with_context(|| "hcl-tweak failed to run")?;
 
     io::stdout().write_all(&output.stdout).unwrap();

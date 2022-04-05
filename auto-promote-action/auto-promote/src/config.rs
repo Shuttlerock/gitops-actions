@@ -9,7 +9,7 @@ pub enum Pattern {
     #[serde(rename_all = "camelCase")]
     Hcl {
         block: String,
-        labels: Vec<String>,
+        labels: Option<Vec<String>>,
         attributes: Option<HashMap<String, String>>,
         target_attribute: String,
     },

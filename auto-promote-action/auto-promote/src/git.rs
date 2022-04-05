@@ -18,6 +18,8 @@ pub struct GitContext {
 
 impl GitContext {
     pub fn checkout(&self, branch: &str) -> Result<()> {
+        println!("Checking out branch {}...", branch);
+
         let obj = self
             .repository
             .revparse_single(&format!("refs/heads/{}", branch))?;
@@ -49,6 +51,8 @@ impl GitContext {
         let parent_commit = self.find_last_commit()?;
         let tree = self.repository.find_tree(oid)?;
 
+        println!("Committing...");
+
         self.repository.commit(
             Some("HEAD"),
             &signature,
@@ -69,6 +73,8 @@ impl GitContext {
         let callbacks = remote_callbacks(&self.user, self.password.as_deref());
         opts.remote_callbacks(callbacks);
 
+        println!("Pushing changes to branch {}...", remote_branch);
+
         remote.push(
             &[format!("HEAD:refs/heads/{}", remote_branch)],
             Some(&mut opts),
@@ -77,7 +83,9 @@ impl GitContext {
         Ok(())
     }
 
-    pub fn cleanup(&self) -> Result<()> {
+    fn cleanup(&self) -> Result<()> {
+        println!("Deleting local repository files...");
+
         fs::remove_dir_all(&self.directory)?;
         Ok(())
     }
@@ -131,8 +139,6 @@ pub fn clone(
     let repository = builder
         .clone(url, path.clone())
         .with_context(|| format!("failed to clone repository: {}", url))?;
-
-    println!("Cloning complete.");
 
     let ctx = GitContext {
         directory: path.to_path_buf(),

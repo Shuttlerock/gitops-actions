@@ -37,6 +37,8 @@ pub async fn merge_pull_request(
 
     let octocrab = builder.build()?;
 
+    println!("Creating pull request...");
+
     // Create PR.
     let pr = octocrab
         .pulls(owner.as_str(), repo.as_str())
@@ -44,6 +46,8 @@ pub async fn merge_pull_request(
         .body(body)
         .send()
         .await?;
+
+    println!("Merging pull request...");
 
     // Merge PR.
     octocrab

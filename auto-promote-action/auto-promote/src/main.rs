@@ -1,32 +1,16 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use clap::Parser;
-use std::error::Error;
-use std::path::{Path, PathBuf};
+use config::Pattern;
+use std::collections::HashMap;
+use std::path::Path;
 use uuid::Uuid;
 
+mod cli;
 mod config;
 mod git;
+mod glob;
 mod hcl;
 mod pr;
-
-use config::Pattern;
-use glob::glob;
-use std::collections::HashMap;
-
-/// Parse a single key-value pair.
-fn parse_key_val<T, U>(s: &str) -> Result<(T, U)>
-where
-    T: std::str::FromStr,
-    T::Err: Error + Send + Sync + 'static,
-    U: std::str::FromStr,
-    U::Err: Error + Send + Sync + 'static,
-{
-    let pos = s
-        .find('=')
-        .ok_or_else(|| anyhow!("invalid KEY=value: no `=` found in `{}`", s))?;
-
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
-}
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -44,26 +28,8 @@ struct Args {
     config: std::path::PathBuf,
 
     /// Key value pairs of the form 'key=value'.
-    #[clap(short, parse(try_from_str = parse_key_val), multiple_occurrences(true))]
+    #[clap(short, parse(try_from_str = cli::parse_key_val), multiple_occurrences(true))]
     values: Vec<(String, String)>,
-}
-
-// Get all file paths matching the unix glob pattern.
-fn glob_files(pattern: &str) -> Result<Vec<PathBuf>> {
-    let paths = glob(pattern)?
-        .filter(|path| match path {
-            Err(_) => true,
-            Ok(path) => {
-                if path.is_file() {
-                    true
-                } else {
-                    false
-                }
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(paths)
 }
 
 #[tokio::main]
@@ -91,7 +57,7 @@ async fn main() -> Result<()> {
 
         // Apply all rules.
         for rule in target.rules.iter() {
-            let absolute_paths = glob_files(&format!("{}/{}", repository_str, rule.file_pattern))?;
+            let absolute_paths = glob::files(&format!("{}/{}", repository_str, rule.file_pattern))?;
 
             // Strip repository path to get just relative paths.
             let relative_paths = absolute_paths
@@ -118,7 +84,7 @@ async fn main() -> Result<()> {
                         hcl::update_file(
                             &path,
                             &block,
-                            &labels,
+                            labels.as_ref().unwrap_or(&Vec::default()),
                             attributes.as_ref().unwrap_or(&HashMap::default()),
                             &target_attribute,
                             &value,
@@ -150,9 +116,6 @@ async fn main() -> Result<()> {
             args.git_password.as_deref(),
         )
         .await?;
-
-        // Remove local repository.
-        ctx.cleanup()?;
     }
 
     Ok(())

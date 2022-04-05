@@ -13,33 +13,37 @@ func main() {
 	var attributes cli.KeyValueArrayFlag
 
 	filename := flag.String("filename", "", "Path to HCL file to modify.")
-	block := flag.String("block", "", "Name of block to modify.")
+	blockType := flag.String("block", "", "Type of block to modify.")
 	flag.Var(&labels, "label", "List of labels that must be present in a block.")
 	flag.Var(&attributes, "attribute", "List of attributes that must be present in a block.")
 	targetAttribute := flag.String("target-attribute", "", "Name of the target attribute to modify.")
 	targetValue := flag.String("target-value", "", "New value for the attribute.")
 	flag.Parse()
 
-	if *filename == "" || *block == "" || *targetAttribute == "" || *targetValue == "" {
+	if *filename == "" || *blockType == "" || *targetAttribute == "" || *targetValue == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	file, err := hcl.OpenFile(*filename)
+	file, err := hcl.ReadFile(*filename)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to open file: %s", err)
 		os.Exit(1)
 	}
 
-	err = hcl.SetStringValue(file, *block, labels, attributes, *targetAttribute, *targetValue)
+	blocks, err := hcl.GetMatchingBlocks(file.Body(), *blockType, labels, attributes)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to update attributes: %s", err)
+		fmt.Fprintf(os.Stderr, "Failed to retrieve blocks: %s", err)
 		os.Exit(1)
 	}
 
-	err = hcl.SaveFile(file, *filename)
+	for _, block := range blocks {
+		hcl.SetAttributeValue(block, *targetAttribute, *targetValue)
+	}
+
+	err = hcl.WriteFile(file, *filename)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to save file: %s", err)
