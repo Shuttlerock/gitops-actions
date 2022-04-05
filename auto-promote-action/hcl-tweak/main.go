@@ -4,32 +4,23 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"shuttlerock.com/hcl-tweak/cli"
 	"shuttlerock.com/hcl-tweak/hcl"
-	"strings"
 )
 
-type arrayFlag []string
-
-func (i *arrayFlag) String() string {
-	return strings.Join(*i, " ")
-}
-
-func (i *arrayFlag) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
 func main() {
-	var labels arrayFlag
+	var labels cli.ArrayFlag
+	var attributes cli.KeyValueArrayFlag
 
 	filename := flag.String("filename", "", "Path to HCL file to modify.")
 	block := flag.String("block", "", "Name of block to modify.")
-	flag.Var(&labels, "labels", "List of labels for the block to modify.")
-	attribute := flag.String("attribute", "", "Name of the attribute to modify.")
-	value := flag.String("value", "", "New value for the attribute.")
+	flag.Var(&labels, "label", "List of labels that must be present in a block.")
+	flag.Var(&attributes, "attribute", "List of attributes that must be present in a block.")
+	targetAttribute := flag.String("target-attribute", "", "Name of the target attribute to modify.")
+	targetValue := flag.String("target-value", "", "New value for the attribute.")
 	flag.Parse()
 
-	if *filename == "" || *block == "" || *attribute == "" || *value == "" {
+	if *filename == "" || *block == "" || *targetAttribute == "" || *targetValue == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -38,13 +29,20 @@ func main() {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to open file: %s", err)
+		os.Exit(1)
 	}
 
-	hcl.SetStringValue(file, *block, labels, *attribute, *value)
+	err = hcl.SetStringValue(file, *block, labels, attributes, *targetAttribute, *targetValue)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to update attributes: %s", err)
+		os.Exit(1)
+	}
 
 	err = hcl.SaveFile(file, *filename)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to save file: %s", err)
+		os.Exit(1)
 	}
 }

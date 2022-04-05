@@ -1,6 +1,7 @@
 package hcl
 
 import (
+	"errors"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"os"
@@ -13,9 +14,13 @@ func OpenFile(filename string) (*hclwrite.File, error) {
 		return nil, err
 	}
 
-	file, _ := hclwrite.ParseConfig(bytes, filename, hcl.Pos{Line: 1, Column: 1})
+	file, diag := hclwrite.ParseConfig(bytes, filename, hcl.Pos{Line: 1, Column: 1})
 
-	return file, nil
+	if diag.HasErrors() {
+		err = errors.New(diag.Error())
+	}
+
+	return file, err
 }
 
 func SaveFile(file *hclwrite.File, filename string) error {

@@ -1,0 +1,19 @@
+targets:
+  - repository: https://github.com/Shuttlerock/erlend-test.git
+    branch: master
+    enabled: true
+    rules:
+      - filePattern: '**/*.tf'
+        variable: semver
+        pattern:
+          block: locals
+          labels: []
+          targetAttribute: app_version
+      - filePattern: '**/*.tf'
+        variable: commit
+        pattern:
+          block: module
+          labels: []
+          attributes:
+            source: app.terraform.io/shuttlerock/creative-revision/shuttlerock//modules/event-consumer
+          targetAttribute: version

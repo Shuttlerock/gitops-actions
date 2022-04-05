@@ -1,11 +1,18 @@
-use serde::{Serialize, Deserialize};
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Pattern {
     #[serde(rename_all = "camelCase")]
-    Hcl { block: String, labels: Vec<String>, attribute: String },
+    Hcl {
+        block: String,
+        labels: Vec<String>,
+        attributes: Option<HashMap<String, String>>,
+        target_attribute: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -31,9 +38,12 @@ pub struct Config {
     pub targets: Vec<Target>,
 }
 
-pub fn from_path(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
-    let file = std::fs::File::open(path)?;
-    let result: Config = serde_yaml::from_reader(file)?;
+pub fn from_path(path: &Path) -> Result<Config> {
+    let file = std::fs::File::open(path)
+        .with_context(|| format!("failed to open config file: {}", path.display()))?;
+
+    let result: Config = serde_yaml::from_reader(file)
+        .with_context(|| format!("failed to parse config file: {}", path.display()))?;
 
     Ok(result)
 }

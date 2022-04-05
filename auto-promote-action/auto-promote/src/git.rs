@@ -1,10 +1,13 @@
-use git2::{ Commit, Cred, CredentialType, FetchOptions, ObjectType, PushOptions, Repository, RemoteCallbacks, Signature };
+use anyhow::{anyhow, Context, Result};
 use git2::build::RepoBuilder;
-use std::path::{ Path, PathBuf };
+use git2::{
+    Commit, Cred, CredentialType, FetchOptions, ObjectType, PushOptions, RemoteCallbacks,
+    Repository, Signature,
+};
 use std::fs;
-use std::io;
+use std::path::{Path, PathBuf};
 
-pub struct Context {
+pub struct GitContext {
     user: String,
     email: String,
     password: Option<String>,
@@ -13,20 +16,28 @@ pub struct Context {
     directory: PathBuf,
 }
 
-impl Context {
-    pub fn checkout(&self, branch: &str) -> Result<(), git2::Error> {
-        let obj = self.repository.revparse_single(&format!("refs/heads/{}", branch))?;
+impl GitContext {
+    pub fn checkout(&self, branch: &str) -> Result<()> {
+        let obj = self
+            .repository
+            .revparse_single(&format!("refs/heads/{}", branch))?;
         self.repository.checkout_tree(&obj, None)?;
 
         Ok(())
     }
 
-    fn find_last_commit(&self) -> Result<Commit, git2::Error> {
-        let obj = self.repository.head()?.resolve()?.peel(ObjectType::Commit)?;
-        obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit"))
+    fn find_last_commit(&self) -> Result<Commit> {
+        let obj = self
+            .repository
+            .head()?
+            .resolve()?
+            .peel(ObjectType::Commit)?;
+
+        obj.into_commit()
+            .map_err(|_| anyhow!("couldn't find commit"))
     }
 
-    pub fn add_and_commit(&self, paths: &[&Path], message: &str) -> Result<(), git2::Error> {
+    pub fn add_and_commit(&self, paths: &[&Path], message: &str) -> Result<()> {
         let mut index = self.repository.index()?;
 
         for path in paths {
@@ -44,12 +55,13 @@ impl Context {
             &signature,
             message,
             &tree,
-            &[&parent_commit])?;
+            &[&parent_commit],
+        )?;
 
         Ok(())
     }
 
-    pub fn push_head(&self, remote_branch: &str) -> Result<(), git2::Error> {
+    pub fn push_head(&self, remote_branch: &str) -> Result<()> {
         let mut remote = self.repository.find_remote("origin")?;
 
         let mut opts = PushOptions::new();
@@ -57,18 +69,21 @@ impl Context {
         let callbacks = remote_callbacks(&self.user, self.password.as_deref());
         opts.remote_callbacks(callbacks);
 
-        remote.push(&[format!("HEAD:refs/heads/{}", remote_branch)], Some(&mut opts))?;
+        remote.push(
+            &[format!("HEAD:refs/heads/{}", remote_branch)],
+            Some(&mut opts),
+        )?;
 
         Ok(())
     }
 
-    pub fn cleanup(&self) -> Result<(), io::Error> {
+    pub fn cleanup(&self) -> Result<()> {
         fs::remove_dir_all(&self.directory)?;
         Ok(())
     }
 }
 
-impl Drop for Context {
+impl Drop for GitContext {
     fn drop(&mut self) {
         self.cleanup().ok();
     }
@@ -79,20 +94,30 @@ fn remote_callbacks<'a>(user: &'a str, password: Option<&'a str>) -> RemoteCallb
 
     callbacks.credentials(move |_user, _user_from_url, cred| {
         if cred != CredentialType::USER_PASS_PLAINTEXT {
-            return Err(git2::Error::from_str("unsupported authentication requested"));
+            return Err(git2::Error::from_str(
+                "unsupported authentication requested",
+            ));
         }
 
         if let Some(password) = password {
             return Cred::userpass_plaintext(user, password);
         }
 
-        Err(git2::Error::from_str("repository requires password, but none supplied"))
+        Err(git2::Error::from_str(
+            "repository requires password, but none supplied",
+        ))
     });
 
     callbacks
 }
 
-pub fn clone(url: &str, path: &Path, user: &str, email: &str, password: Option<&str>) -> Result<Context, git2::Error> {
+pub fn clone(
+    url: &str,
+    path: &Path,
+    user: &str,
+    email: &str,
+    password: Option<&str>,
+) -> Result<GitContext> {
     let mut opts = FetchOptions::new();
 
     let callbacks = remote_callbacks(user, password);
@@ -103,11 +128,13 @@ pub fn clone(url: &str, path: &Path, user: &str, email: &str, password: Option<&
 
     println!("Cloning repository {}...", url);
 
-    let repository = builder.clone(url, path.clone())?;
+    let repository = builder
+        .clone(url, path.clone())
+        .with_context(|| format!("failed to clone repository: {}", url))?;
 
     println!("Cloning complete.");
 
-    let ctx = Context {
+    let ctx = GitContext {
         directory: path.to_path_buf(),
         repository,
         user: user.to_string(),

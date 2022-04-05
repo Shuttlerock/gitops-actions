@@ -1,30 +1,42 @@
-use std::path::Path;
-use std::error::Error;
-use std::process::Command;
+use anyhow::{anyhow, Context, Result};
+use std::collections::HashMap;
 use std::io::{self, Write};
+use std::path::Path;
+use std::process::Command;
 
-pub fn update_file<T: AsRef<str>>(file_name: &Path, block: &str, labels: &[T], attribute: &str, value: &str) -> Result<(), Box<dyn Error>> {
+pub fn update_file<T: AsRef<str>>(
+    file_name: &Path,
+    block: &str,
+    labels: &[T],
+    attributes: &HashMap<String, String>,
+    target_attribute: &str,
+    target_value: &str,
+) -> Result<()> {
     let mut command = Command::new("hcl-tweak");
 
     command.arg("-filename").arg(file_name.as_os_str());
     command.arg("-block").arg(block);
-    command.arg("-attribute").arg(attribute);
-    command.arg("-value").arg(value);
+    command.arg("-target-attribute").arg(target_attribute);
+    command.arg("-target-value").arg(target_value);
 
-    if !labels.is_empty() {
-        command.arg("-labels");
-        for label in labels.iter() {
-            command.arg(label.as_ref());
-        }
+    for label in labels {
+        command.arg("-label");
+        command.arg(label.as_ref());
     }
 
-    let output = command.output()?;
+    for (name, value) in attributes {
+        command.arg("-attribute");
+        command.arg(format!("{}={}", name, value));
+    }
+
+    let output = command.output()
+        .with_context(|| "hcl-tweak failed to run")?;
 
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
     if !output.status.success() {
-        return Err(format!("hcl-tweak failed to run: {}", output.status).into());
+        return Err(anyhow!("hcl-tweak failed to run: {}", output.status));
     }
 
     Ok(())
