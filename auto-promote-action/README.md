@@ -11,10 +11,12 @@ targets:
   branch: develop
   enabled: true
   rules:
-    - fileName: variables_versions.tf
+    - filePattern: '**/*.tf'
       variable: semver
       pattern:
         block: module
-        labels: [creative_revision_event_consumer]
-        attribute: version
+        labels: [test_resource]
+        attributes:
+          source: app.terraform.io/shuttlerock/creative-revision/shuttlerock//modules/event-consumer
+        targetAttribute: version
 ```
