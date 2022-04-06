@@ -29,16 +29,9 @@ func GetMatchingBlocks(
 		attributesMatch := true
 
 		for _, attributePair := range attributes {
-			attribute := block.Body().GetAttribute(attributePair.Key)
+			value := GetAttributeValue(block, attributePair.Key)
 
-			if attribute == nil {
-				attributesMatch = false
-				break
-			}
-
-			value := GetAttributeValue(attribute)
-
-			if value != attributePair.Value {
+			if value == nil || *value != attributePair.Value {
 				attributesMatch = false
 				break
 			}

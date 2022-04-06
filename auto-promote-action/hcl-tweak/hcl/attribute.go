@@ -6,11 +6,19 @@ import (
 	"strings"
 )
 
-// GetAttributeValue returns a string representation of the value of the attribute.
-func GetAttributeValue(attribute *hclwrite.Attribute) string {
+// GetAttributeValue returns a string representation of a named attribute within the given block.
+func GetAttributeValue(block *hclwrite.Block, name string) *string {
+	attribute := block.Body().GetAttribute(name)
+
+	if attribute == nil {
+		return nil
+	}
+
 	tokens := attribute.Expr().BuildTokens(nil)
 
-	return strings.Trim(string(tokens.Bytes()), "\" ")
+	result := strings.Trim(string(tokens.Bytes()), "\" ")
+
+	return &result
 }
 
 // SetAttributeValue updates the contents of a named attribute within the given block.
