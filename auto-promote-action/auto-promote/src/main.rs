@@ -27,9 +27,9 @@ struct Args {
     #[clap(short, long)]
     config: std::path::PathBuf,
 
-    /// Key value pairs of the form 'key=value'.
-    #[clap(short, parse(try_from_str = cli::parse_key_val), multiple_occurrences(true))]
-    values: Vec<(String, String)>,
+    /// Key value pairs of the form 'key1=value1 key2=value2'.
+    #[clap(short, long, parse(try_from_str = cli::parse_key_val), multiple_occurrences(false), value_delimiter(' '))]
+    variables: Vec<(String, String)>,
 }
 
 #[tokio::main]
@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
 
             // Find the first correct value for variable in the inputs.
             let value = args
-                .values
+                .variables
                 .iter()
                 .find(|(key, _)| *key == rule.variable)
                 .map(|(_, value)| value)

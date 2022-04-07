@@ -2,26 +2,23 @@ name: 'Auto Promotion'
 description: 'Apply environment promotion rules from config'
 inputs:
   user:
-    description: 'User to use for accessing repositories'
+    description: 'The User to use for accessing target repositories'
     required: true
   email:
     description: 'Email to use in signature'
     required: true
   password:
-    description: 'Password or access token for authenticating with repository'
+    description: 'Password or access token for authenticating with target repositories'
     required: false
   config:
     description: 'Path to config file'
     required: true
-  semver:
-    description: 'Semantic version for reference in config'
-    required: false
-  commit:
-    description: 'Commit SHA for reference in config'
-    required: false
+  variables:
+    description: 'Space separate list of variable / value pairs in the format of x=y'
+    required: true
 runs:
   using: 'docker'
-  image: 'docker://erlendsr/auto-promote-action:1.9.0'
+  image: 'docker://erlendsr/auto-promote-action:1.10.0'
   args:
     - 'auto-promote'
     - '--git-user'
@@ -32,7 +29,5 @@ runs:
     - ${{ inputs.password }}
     - '--config'
     - ${{ inputs.config }}
-    - '-v'
-    - 'semver=${{ inputs.semver }}'
-    - '-v'
-    - 'commit=${{ inputs.commit }}'
+    - '--variables'
+    - ${{ inputs.variables }}
