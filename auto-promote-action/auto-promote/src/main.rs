@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
         for rule in target.rules.iter() {
             let absolute_paths = glob::files(&format!("{}/{}", repository_str, rule.file_pattern))?;
 
-            // Strip repository path to get just relative paths.
+            // Strip repository path to get just relative paths in the form expected by git.
             let relative_paths = absolute_paths
                 .iter()
                 .map(|path| path.strip_prefix(repository_path))
@@ -93,7 +93,7 @@ async fn main() -> Result<()> {
                 }
             }
 
-            // Add and commit updated file.
+            // Add and commit updated file(s).
             ctx.add_and_commit(
                 &relative_paths,
                 &format!("Bump {} to {}.", rule.variable, value),
