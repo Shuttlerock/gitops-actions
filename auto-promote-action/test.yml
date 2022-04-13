@@ -6,11 +6,6 @@ targets:
       - filePattern: '**/*.tf'
         variable: semver
         pattern:
-          block: locals
-          targetAttribute: app_version
-      - filePattern: '**/*.tf'
-        variable: commit
-        pattern:
           block: module
           attributes:
             source: app.terraform.io/shuttlerock/creative-revision/shuttlerock//modules/event-consumer

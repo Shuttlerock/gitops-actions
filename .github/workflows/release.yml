@@ -1,0 +1,17 @@
+on: [push]
+
+jobs:
+  auto_promote_test:
+    runs-on: ubuntu-latest
+    name: A job to test auto promote action
+    steps:
+      - uses: actions/checkout@v3
+      - name: Auto promote step
+        id: promote
+        uses: Shuttlerock/gitops-actions/auto-promote-action@v1.11
+        with:
+          user: spielbot
+          email: spielbot@shuttlerock.com
+          password: ${{ secrets.GITHUB_TOKEN }}
+          config: auto-promote-action/test.yml
+          variables: semver=1.9.1
