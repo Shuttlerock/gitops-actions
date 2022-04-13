@@ -12,6 +12,6 @@ jobs:
         with:
           user: spielbot
           email: spielbot@shuttlerock.com
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.ACTIONS_WRITE_TOKEN }}
           config: auto-promote-action/test.yml
           variables: semver=1.9.1
