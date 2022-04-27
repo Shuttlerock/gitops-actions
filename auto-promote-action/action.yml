@@ -13,12 +13,15 @@ inputs:
   config:
     description: 'Path to config file'
     required: true
+  trigger:
+    description: 'Release trigger that can be used for filtering targets'
+    required: false
   variables:
     description: 'Space separate list of variable / value pairs in the format of x=y'
     required: true
 runs:
   using: 'docker'
-  image: 'docker://shuttlerock/auto-promote-action:1.11'
+  image: 'docker://shuttlerock/auto-promote-action:1.12'
   args:
     - 'auto-promote'
     - '--git-user'
@@ -29,5 +32,7 @@ runs:
     - ${{ inputs.password }}
     - '--config'
     - ${{ inputs.config }}
+    - '--trigger'
+    - ${{ inputs.trigger }}
     - '--variables'
     - ${{ inputs.variables }}
