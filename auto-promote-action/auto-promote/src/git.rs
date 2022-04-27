@@ -83,6 +83,11 @@ impl GitContext {
         Ok(())
     }
 
+    pub fn head_name(&self) -> Result<Option<String>> {
+        let head = self.repository.head()?;
+        Ok(head.shorthand().map(str::to_owned))
+    }
+
     fn cleanup(&self) -> Result<()> {
         println!("Deleting local repository files...");
 
@@ -139,6 +144,25 @@ pub fn clone(
     let repository = builder
         .clone(url, path.clone())
         .with_context(|| format!("failed to clone repository: {}", url))?;
+
+    let ctx = GitContext {
+        directory: path.to_path_buf(),
+        repository,
+        user: user.to_string(),
+        email: email.to_string(),
+        password: password.map(String::from),
+    };
+
+    Ok(ctx)
+}
+
+pub fn open(
+    path: &Path,
+    user: &str,
+    email: &str,
+    password: Option<&str>,
+) -> Result<GitContext> {
+    let repository = Repository::open(path)?;
 
     let ctx = GitContext {
         directory: path.to_path_buf(),
