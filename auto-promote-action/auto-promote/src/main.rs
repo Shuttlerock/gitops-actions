@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use config::Pattern;
+use regex::Regex;
 use std::collections::HashMap;
 use std::path::Path;
 use uuid::Uuid;
@@ -27,6 +28,9 @@ struct Args {
     #[clap(short, long)]
     config: std::path::PathBuf,
 
+    #[clap(short = 't', long)]
+    trigger: Option<String>,
+
     /// Key value pairs of the form 'key1=value1 key2=value2'.
     #[clap(short, long, parse(try_from_str = cli::parse_key_val), multiple_occurrences(false), value_delimiter(' '))]
     variables: Vec<(String, String)>,
@@ -41,10 +45,21 @@ async fn main() -> Result<()> {
     let repository_str = "/tmp/repository";
     let repository_path = Path::new(&repository_str);
 
-    // Process all enabled targets.
-    let targets = cfg.targets.iter().filter(|t| t.enabled);
+    for target in cfg.targets {
+        // Skip disabled targets.
+        if !target.enabled {
+            continue
+        }
 
-    for target in targets {
+        // If trigger and filter are defined, then skip this target if the trigger doesn't match the filter.
+        if let (Some(filter), Some(trigger)) = (&target.filter, &args.trigger) {
+            let filter = Regex::new(&filter)?;
+
+            if !filter.is_match(&trigger) {
+                continue;
+            }
+        }
+
         // Clone and checkout target repo / branch.
         let ctx = git::clone(
             &target.repository,

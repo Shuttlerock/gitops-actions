@@ -28,6 +28,7 @@ pub struct Rule {
 pub struct Target {
     pub repository: String,
     pub branch: String,
+    pub filter: Option<String>,
     pub rules: Vec<Rule>,
     pub enabled: bool,
 }
