@@ -15,7 +15,7 @@ inputs:
     required: true
   trigger:
     description: 'Release trigger that can be used for filtering targets'
-    required: false
+    required: true
   variables:
     description: 'Space separate list of variable / value pairs in the format of x=y'
     required: true

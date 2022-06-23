@@ -63,12 +63,12 @@ async fn main() -> Result<()> {
         // Clone and checkout target repo / branch.
         let ctx = git::clone(
             &target.repository,
+            &target.branch,
             repository_path,
             &args.git_user,
             &args.git_email,
             args.git_password.as_deref(),
         )?;
-        ctx.checkout(&target.branch)?;
 
         // Apply all rules.
         for rule in target.rules.iter() {

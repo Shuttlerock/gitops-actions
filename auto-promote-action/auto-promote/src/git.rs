@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use git2::build::RepoBuilder;
 use git2::{
-    Commit, Cred, CredentialType, FetchOptions, ObjectType, PushOptions, RemoteCallbacks,
-    Repository, Signature,
+    Commit, Cred, CredentialType, FetchOptions, ObjectType, PushOptions,
+    RemoteCallbacks, Repository, Signature,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -126,6 +126,7 @@ fn remote_callbacks<'a>(user: &'a str, password: Option<&'a str>) -> RemoteCallb
 
 pub fn clone(
     url: &str,
+    branch: &str,
     path: &Path,
     user: &str,
     email: &str,
@@ -136,12 +137,11 @@ pub fn clone(
     let callbacks = remote_callbacks(user, password);
     opts.remote_callbacks(callbacks);
 
-    let mut builder = RepoBuilder::new();
-    builder.fetch_options(opts);
-
     println!("Cloning repository {}...", url);
 
-    let repository = builder
+    let repository = RepoBuilder::new()
+        .fetch_options(opts)
+        .branch(branch)
         .clone(url, path.clone())
         .with_context(|| format!("failed to clone repository: {}", url))?;
 
