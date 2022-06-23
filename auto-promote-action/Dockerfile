@@ -10,8 +10,6 @@ RUN go build -o hcl-tweak ./main.go
 
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y libssl-dev ca-certificates
-
 COPY --from=builder-rust /usr/local/cargo/bin/auto-promote /usr/local/bin/auto-promote
 COPY --from=builder-golang /usr/src/app/hcl-tweak /usr/local/bin/hcl-tweak
 
