@@ -21,7 +21,7 @@ inputs:
     required: true
 runs:
   using: 'docker'
-  image: 'docker://shuttlerock/auto-promote-action:1.12'
+  image: 'docker://shuttlerock/auto-promote-action:1.13'
   args:
     - 'auto-promote'
     - '--git-user'
